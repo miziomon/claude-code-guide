@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.23.2] — 2026-05-03
+
+### Changed
+
+- Expand root `README.md`: add chapter table with descriptions, repository structure diagram, expanded About section, and Why this guide section drawn from the Preface
+
+---
+
 ## [4.23.1] — 2026-05-03
 
 ### Added
@@ -37,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/miziomon/claude-code-guide/compare/v4.23.1...HEAD
+[Unreleased]: https://github.com/miziomon/claude-code-guide/compare/v4.23.2...HEAD
+[4.23.2]: https://github.com/miziomon/claude-code-guide/compare/v4.23.1...v4.23.2
 [4.23.1]: https://github.com/miziomon/claude-code-guide/compare/v4.23.0...v4.23.1
 [4.23.0]: https://github.com/miziomon/claude-code-guide/releases/tag/v4.23.0
