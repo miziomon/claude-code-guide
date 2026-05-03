@@ -1,0 +1,13 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts (keep output/ tracked — pre-built PDFs are part of the release)
+*.aux
+*.log
+*.toc
