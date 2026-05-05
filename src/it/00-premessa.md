@@ -1,6 +1,6 @@
 # Guida Pratica a Claude Code CLI
 
-> **Versione 4.23 — maggio 2026** — verificata su Claude Code v2.1.123
+> **Versione 4.30 — maggio 2026** — verificata su Claude Code v2.1.123
 > Licenza [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > ← [Prefazione](00-prefazione.md) | [Index](README.md) | [1. Cos'è Claude Code](01-cosè-claude-code.md) →

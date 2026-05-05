@@ -1,6 +1,6 @@
 # Practical Guide to Claude Code CLI
 
-> **Version 4.23 — May 2026**
+> **Version 4.30 — May 2026**
 > Verified on **Claude Code v2.1.123** · Licensed [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 A hands-on guide covering installation, workflow, prompt engineering, and best practices for Claude Code.
@@ -21,9 +21,9 @@ A hands-on guide covering installation, workflow, prompt engineering, and best p
 | 6 | [Prompt engineering](06-prompt-engineering.md) | Writing effective prompts for agentic tools |
 | 7 | [Persistent memory](07-memory.md) | CLAUDE.md and Auto Memory |
 | 8 | [Context management](08-context.md) | Keeping the context window clean |
-| 9 | [Security and permissions](09-security.md) | Permission model and safe operation |
+| 9 | [Security, permissions, and guardrails](09-security.md) | Permission model, safe operation, and guardrails |
 | 10 | [Skills](10-skills.md) | The extension mechanism |
-| 11 | [MCP](11-mcp.md) | Integrating external services |
+| 11 | [MCP](11-mcp.md) | Integrating external services · [Example: wordpress-publisher-mcp](../examples/wordpress-publisher-mcp/) |
 | 12 | [Subagents](12-subagents.md) | Orchestrating specialized work |
 | 13 | [Hooks](13-hooks.md) | Automating Claude Code's lifecycle |
 | 14 | [Plugins](14-plugins.md) | Distributable packages |

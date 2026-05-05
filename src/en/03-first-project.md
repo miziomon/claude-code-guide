@@ -1,6 +1,6 @@
 # Practical Guide to Claude Code CLI
 
-> **Version 4.23 — May 2026** — verified on Claude Code v2.1.123
+> **Version 4.30 — May 2026** — verified on Claude Code v2.1.123
 > Licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > ← [2. Installation and setup](02-installation.md) | [Index](README.md) | [4. Essential commands and shortcuts](04-commands.md) →

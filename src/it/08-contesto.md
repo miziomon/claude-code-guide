@@ -1,9 +1,9 @@
 # Guida Pratica a Claude Code CLI
 
-> **Versione 4.23 — maggio 2026** — verificata su Claude Code v2.1.123
+> **Versione 4.30 — maggio 2026** — verificata su Claude Code v2.1.123
 > Licenza [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
-> ← [7. Memoria persistente](07-memoria.md) | [Index](README.md) | [9. Sicurezza e permessi](09-sicurezza.md) →
+> ← [7. Memoria persistente](07-memoria.md) | [Index](README.md) | [9. Sicurezza, permessi e guardrail](09-sicurezza.md) →
 
 ---
 
@@ -116,8 +116,9 @@ Sono i due strumenti principali di compressione. Differenza importante:
   Sintassi opzionale per dare un focus al sommario:
 
   ```
-  /compact mantenendo le decisioni architetturali del refactor auth
-           e il pattern adottato per il rate limiting
+  /compact mantenendo le decisioni architetturali
+           del refactor auth e il pattern adottato
+           per il rate limiting
   ```
 
   Senza istruzioni, Claude decide cosa è importante. Con istruzioni, gli dici tu su cosa concentrarsi e cosa può buttare via senza rimpianti.
@@ -232,17 +233,84 @@ La gestione del contesto attraversa tutta la guida, non vive solo qui. Ecco dove
 
 ### 8.9 Scegliere l'architettura giusta: tabella decisionale
 
-I cinque meccanismi di estensione di Claude Code (`CLAUDE.md`, Auto Memory, Skill, Subagent, Hook) si sovrappongono nei casi d'uso e generano facilmente la domanda *"quale uso per cosa?"*. Le decisioni progettuali si intrecciano: una convenzione di codice va in `CLAUDE.md` o in una skill? Un'automazione va in un hook o in un custom slash command? Un'esplorazione di un'area sconosciuta va fatta dal main agent o delegata a un subagent? La tabella seguente è la mappa unificata.
+I cinque meccanismi di estensione di Claude Code (`CLAUDE.md`, Auto Memory, Skill, Subagent, Hook) si sovrappongono nei casi d'uso e generano facilmente la domanda *"quale uso per cosa?"*. Le decisioni progettuali si intrecciano: una convenzione di codice va in `CLAUDE.md` o in una skill? Un'automazione va in un hook o in un custom slash command? Un'esplorazione di un'area sconosciuta va fatta dal main agent o delegata a un subagent? Le sezioni seguenti sono la mappa unificata.
 
-| Strumento | Caso d'uso tipico | Costo contesto | Quando usarlo | Limite |
-|-----------|-------------------|----------------|----------------|--------|
-| **`CLAUDE.md`** | Convenzioni, stack, regole invalicabili che valgono per **ogni sessione di un progetto** (linguaggio, framework, struttura cartelle, comandi build, anti-pattern da evitare). | **Alto**: caricato per intero ogni sessione. Tieni il file < 200 righe. | Hai regole stabili che il modello deve sempre conoscere prima di iniziare a lavorare. | Non si adatta a preferenze cross-progetto né ad apprendimenti dinamici (per quelli, Auto Memory). |
-| **Auto Memory** | Apprendimenti che attraversano sessioni e progetti: preferenze utente, correzioni che il modello deve ricordare, decisioni architetturali stabili. | **Basso**: solo `MEMORY.md` (indice, max ~6.5K token) viene caricato; i topic file sono on-demand. | Vuoi che Claude *impari nel tempo* da come lavori, senza che tu debba ripetere le stesse istruzioni a ogni nuova sessione. | Non è un repository di documentazione: solo regole/preferenze concise. Se cresce oltre 200 righe va potato. |
-| **Skill** | Playbook codificato e riusabile (procedura, framework di analisi, pattern di scrittura) invocabile da qualunque sessione che la abbia attiva. | **Medio**: ~1% finestra per descrizione (sempre presente), contenuto pieno solo se invocata. | Una procedura ricorrente che vorresti distribuire o standardizzare (`/security-review`, `/simplify`, una skill aziendale di code style). | La somma delle descrizioni di molte skill installate erode il contesto: 10 skill mirate > 50 "non si sa mai". |
-| **Subagent** | Task read-heavy che gonfierebbe il main context: audit, esplorazione di codebase, ricerca pattern in molti file, analisi comparative. | **Quasi zero sul main**: il subagent gira in finestra separata, restituisce solo il sommario. Il vero risparmio strutturale di token. | Stai per leggere 20+ file per produrre un output sintetico, oppure vuoi parallelizzare 3 audit indipendenti. | Latenza maggiore (è un'altra chiamata), niente stato condiviso tra subagent e main, sommario può perdere dettagli. |
-| **Hook** | Automazione deterministica su eventi del lifecycle (`PreToolUse`, `PostToolUse`, `UserPromptSubmit`, ecc.): formattazione, validazione, log, blocchi di sicurezza. | **Zero o negativo**: spesso un hook *riduce* il contesto filtrando l'output rumoroso prima che arrivi al modello. | Vuoi che qualcosa accada **sempre** in risposta a un evento, indipendentemente dalla decisione del modello (es. `prettier` dopo ogni `Edit`, blocco shell su pattern pericolosi). | È deterministico, non semantico: non "capisce", esegue. Non sostituisce un subagent o una skill quando serve giudizio del modello. |
+#### 8.9.1 CLAUDE.md
 
-**Come leggere la tabella decisionale.** Il punto non è scegliere "il migliore in assoluto" ma quello che sta nel posto giusto della catena. Tre principi pratici:
+| Chiave | Valore |
+|---|---|
+| **Caso d'uso** | Convenzioni, stack, regole invalicabili che valgono per ogni sessione di un progetto (linguaggio, framework, struttura cartelle, comandi build, anti-pattern da evitare). |
+| **Costo contesto** | Alto — caricato per intero ogni sessione. Tieni il file < 200 righe. |
+| **Quando usarlo** | Hai regole stabili che il modello deve sempre conoscere prima di iniziare a lavorare. |
+| **Limite** | Non si adatta a preferenze cross-progetto né ad apprendimenti dinamici (per quelli, Auto Memory). |
+
+**Descrizione estesa.** Il file `CLAUDE.md` è la prima cosa che Claude legge all'apertura di una sessione in un progetto. Contiene le regole che valgono *sempre*: linguaggio di programmazione e versione, framework in uso, struttura delle cartelle attesa, comandi di build e test, anti-pattern che non devono mai entrare nel codice. Ogni riga è un vincolo operativo che Claude deve rispettare su qualunque task, in qualunque momento.
+
+**Quando usarlo.** Il test pratico è semplice: questa regola deve valere anche la prossima volta che apro Claude Code su questo progetto? Se la risposta è sì, va in `CLAUDE.md`. Se è valida solo per la sessione corrente o per un singolo task, va in chat o in Auto Memory.
+
+**Limite.** Non scala a preferenze che attraversano progetti diversi — per quelle c'è Auto Memory. Non è adatto a documentazione discorsiva: è per regole operative asciutte, non per tutorial. E non si adatta dinamicamente a ciò che Claude impara nel tempo: è statico per definizione.
+
+#### 8.9.2 Auto Memory
+
+| Chiave | Valore |
+|---|---|
+| **Caso d'uso** | Apprendimenti che attraversano sessioni e progetti: preferenze utente, correzioni da ricordare, decisioni architetturali stabili. |
+| **Costo contesto** | Basso — solo `MEMORY.md` (indice, max ~6.5K token) viene caricato; i topic file sono on-demand. |
+| **Quando usarlo** | Vuoi che Claude impari nel tempo da come lavori, senza ripetere le stesse istruzioni a ogni nuova sessione. |
+| **Limite** | Non è un repository di documentazione: solo regole/preferenze concise. Se cresce oltre 200 righe va potato. |
+
+**Descrizione estesa.** L'auto memory è un sistema di memoria persistente su disco organizzato a due livelli: `MEMORY.md` come indice (~6.5K token, caricato sempre) e file topic on-demand (caricati solo quando rilevanti). Claude vi scrive autonomamente quando apprende qualcosa che vale la pena ricordare: un tuo modo di lavorare, una preferenza stilistica, una correzione che hai dovuto dare più volte.
+
+**Quando usarlo.** Quando noti di dover correggere Claude sulla stessa cosa ogni tre sessioni — quello è il segnale che l'apprendimento dovrebbe essere persistito. A differenza di `CLAUDE.md` (regole di *progetto*), Auto Memory cattura regole di *utente* valide indipendentemente dal progetto aperto.
+
+**Limite.** Non è un wiki né una base di conoscenza: se supera 200 voci nell'indice, il beneficio si inverte (troppo contesto caricato, indice difficile da mantenere). Potare periodicamente le voci obsolete è parte della manutenzione.
+
+#### 8.9.3 Skill
+
+| Chiave | Valore |
+|---|---|
+| **Caso d'uso** | Playbook codificato e riusabile (procedura, framework di analisi, pattern di scrittura) invocabile da qualunque sessione. |
+| **Costo contesto** | Medio — ~1% finestra per descrizione (sempre presente), contenuto pieno solo se invocata. |
+| **Quando usarla** | Una procedura ricorrente che vuoi standardizzare o distribuire (`/security-review`, `/simplify`, skill aziendali). |
+| **Limite** | La somma delle descrizioni di molte skill erode il contesto: 10 skill mirate > 50 "non si sa mai". |
+
+**Descrizione estesa.** Una skill è un file Markdown che il sistema inietta in contesto quando invocata via slash command (`/nome-skill`). Può contenere istruzioni dettagliate, check-list, riferimenti a pattern o framework — in pratica un "manuale operativo" specializzato che Claude esegue su richiesta. Le skill possono orchestrare subagent, usare tool e produrre output strutturati.
+
+**Quando usarla.** Hai una procedura che ripeti spesso e vuoi eseguire in modo consistente — o vuoi condividerla con il team. Il costo di scrittura è una tantum; il beneficio di consistenza si accumula a ogni invocazione. Il caso tipico: review di sicurezza, analisi di performance, refactoring secondo uno stile concordato.
+
+**Limite.** Ogni skill ha la sua descrizione caricata *sempre* in contesto (~1% della finestra), indipendentemente dal fatto che venga usata in quella sessione. Con 50 skill installate, le sole descrizioni occupano ~50% della finestra. Regola pratica: installa solo le skill che usi almeno una volta a settimana.
+
+#### 8.9.4 Subagent
+
+| Chiave | Valore |
+|---|---|
+| **Caso d'uso** | Task read-heavy che gonfierebbe il main context: audit, esplorazione codebase, ricerca pattern in molti file, analisi comparative. |
+| **Costo contesto** | Quasi zero sul main — gira in finestra separata, restituisce solo il sommario. Il vero risparmio strutturale di token. |
+| **Quando usarlo** | Stai per leggere 20+ file per produrre un output sintetico, oppure vuoi parallelizzare 3 audit indipendenti. |
+| **Limite** | Latenza maggiore (è un'altra chiamata), niente stato condiviso tra subagent e main, il sommario può perdere dettagli. |
+
+**Descrizione estesa.** Il subagent è un'istanza separata di Claude che opera in una finestra di contesto indipendente. Il main agent lo spawna con un task preciso, il subagent esegue (legge file, naviga il codebase, costruisce un'analisi), poi restituisce *solo il risultato sintetico*. Il main agent non vede nessuno dei file che il subagent ha letto — questo è il punto: il costo di lettura massiva non inquina il contesto principale.
+
+**Quando usarlo.** Ogni volta che stai per infilare nel contesto principale più di 10–20 file per produrre poi un output di poche righe. Particolarmente efficace in parallelo: tre subagent che esplorano tre aree del codebase simultaneamente completano in meno tempo e con meno token totali di un solo main agent che le esplora in sequenza.
+
+**Limite.** Il subagent non condivide stato con il main: se il main agent ha già analizzato qualcosa o ha ragionamenti in corso, il subagent non li vede. E il sommario restituito può perdere sfumature che erano nei file originali — se la decisione richiede i dettagli, non delegare.
+
+#### 8.9.5 Hook
+
+| Chiave | Valore |
+|---|---|
+| **Caso d'uso** | Automazione deterministica su eventi del lifecycle (`PreToolUse`, `PostToolUse`, `UserPromptSubmit`, ecc.): formattazione, validazione, log, blocchi di sicurezza. |
+| **Costo contesto** | Zero o negativo — spesso un hook *riduce* il contesto filtrando output rumoroso prima che arrivi al modello. |
+| **Quando usarlo** | Vuoi che qualcosa accada **sempre** in risposta a un evento, indipendentemente dalla decisione del modello. |
+| **Limite** | È deterministico, non semantico: non "capisce", esegue. Non sostituisce subagent o skill quando serve giudizio del modello. |
+
+**Descrizione estesa.** Un hook è un comando shell (o script) che il sistema esegue automaticamente al verificarsi di un evento del lifecycle di Claude Code: prima che Claude usi un tool, dopo che l'ha usato, quando l'utente invia un messaggio, quando la sessione termina. A differenza di una skill (che Claude *sceglie* di invocare) o di un subagent (che Claude *decide* di spawnare), l'hook scatta *sempre* — Claude non ha voce in capitolo.
+
+**Quando usarlo.** Quando la regola è assoluta: deve succedere sempre, o mai. `prettier` dopo ogni `Edit`, lint check prima di ogni `Bash`, blocco di pattern di comandi pericolosi — sono tutti hook. La certezza di esecuzione è la proprietà chiave: nessun modello "dimentica" un hook.
+
+**Limite.** Un hook non capisce il contesto: esegue il suo script senza sapere *perché* Claude sta usando quel tool. Non è adatto a decisioni semantiche ("formatta solo se è un file di produzione") — per quelle serve il giudizio di Claude, quindi una skill o un'istruzione in `CLAUDE.md`.
+
+**Come scegliere il meccanismo giusto.** Il punto non è scegliere "il migliore in assoluto" ma quello che sta nel posto giusto della catena. Tre principi pratici:
 
 - **`CLAUDE.md` è la base**, non un'ambizione: se la regola non vale per ogni sessione del progetto, non ci va.
 - **Skill e subagent** lavorano insieme: spesso una skill orchestra un subagent (es. `/security-review` delega a un subagent `Explore` per la lettura massiva, poi compone il report).
@@ -250,9 +318,71 @@ I cinque meccanismi di estensione di Claude Code (`CLAUDE.md`, Auto Memory, Skil
 
 Quando ti accorgi di star ripetendo la stessa istruzione a tre sessioni di seguito, hai un candidato per `CLAUDE.md` o Auto Memory. Quando ti accorgi di star leggendo decine di file per produrre un sommario, hai un candidato per un subagent. Quando ti accorgi di voler garantire che qualcosa *succeda comunque*, hai un candidato per un hook.
 
+### 8.10 Prompt cache e osservabilità del consumo
+
+Claude Code applica automaticamente il **prompt cache** di Anthropic al system prompt e alle definizioni dei tool MCP attivi: questi blocchi — identici turno dopo turno — vengono scritti in cache al primo turno e riletti a costo ridotto nei turni successivi. Capire come funziona e come monitorarlo ti permette di lavorare in modo informato invece di pagare token di nascosto.
+
+#### Come funziona il prompt cache
+
+Il **prompt cache** è un meccanismo di Anthropic che memorizza i prefissi stabili del prompt — il system prompt, le definizioni dei tool MCP, gli esempi few-shot iniziali — per riutilizzarli nei turni successivi senza riprocessarli. In pratica, la prima volta che Claude elabora un blocco di testo lungo e stabile lo scrive in cache; nei turni successivi quel blocco viene riletto dalla cache invece di essere ritrasmesso e calcolato da zero.
+
+**Perché conta economicamente:** la lettura dalla cache costa il **10% del prezzo normale dei token di input**, con un risparmio del 90% sul prefisso fisso. Riduce anche la latenza: i token già processati saltano il forward pass del modello. In una sessione lunga con un system prompt corposo e molti server MCP attivi, la differenza si sente sia sul costo che sulla velocità di risposta.
+
+La cache opera su **prefissi stabili** del prompt, in ordine gerarchico: prima i tool MCP, poi il system prompt, poi i messaggi della conversazione. Perché la cache si attivi su un blocco, quel blocco deve essere identico al turno precedente — anche un singolo carattere cambiato invalida la cache da quel punto in poi — e deve superare una **soglia minima di token**:
+
+| Modello | Minimo token |
+|---|---|
+| Opus 4.7 / 4.6 | 4.096 token |
+| Sonnet 4.6 | 2.048 token |
+| Haiku 4.5 | 4.096 token |
+
+Il system prompt di Claude Code (~4.200 token) supera la soglia su tutti i modelli ed è sempre candidato alla cache. CLAUDE.md, skill descriptions e MEMORY.md vengono inclusi solo se il prefisso che li precede è già stabile e il blocco raggiunge la soglia.
+
+**TTL della cache.** Di default 5 minuti: se non chiedi un secondo turno entro 5 minuti, la cache scade e al turno successivo il blocco viene riscritto. Azioni che invalidano il prefisso — aggiungere o rimuovere un server MCP, modificare CLAUDE.md a caldo, comprimere con `/compact` — provocano lo stesso effetto.
+
+**Cosa non viene cachato.** I file che Claude legge con `Read` entrano nel campo `messages` in posizione variabile e in genere non si beneficia della cache su di essi. I tool results rimangono il costo vivo più difficile da ammortizzare.
+
+#### Monitorare con `/cost` e `/usage`
+
+`/cost` (alias `/usage` o `/stats`) mostra il consumo della sessione corrente. Output di esempio:
+
+```
+/cost
+
+Sessione corrente:
+  Input token:                  12.450
+  Cache write (5 min):          82.000
+  Cache read:                  248.000
+  Output token:                  3.820
+
+Stima costo:    $0.42
+```
+
+La lettura utile è il rapporto tra `cache_write` e `cache_read`:
+
+- **Molti `cache_read`, pochi `cache_write`** → ottimo: la "tara" fissa viene ammortizzata su molti turni.
+- **`cache_write` cresce a ogni turno** → il prefisso si invalida di continuo: cerca se un MCP cambia le sue descrizioni, se CLAUDE.md viene modificato a caldo, o se la compaction è appena avvenuta.
+- **`cache_read` a zero** → cache mai attivata: sessione troppo corta o blocchi sotto la soglia minima.
+
+Lancialo ogni 15-20 turni in sessioni lunghe. Se vedi un picco di `input_tokens` su un turno specifico, hai trovato dove si è letto qualcosa di molto pesante — candidato per la delega a un subagent (vedi [§8.6](#subagent-la-strategia-strutturale)).
+
+#### Env var rilevanti
+
+```bash
+# Riduce il budget di extended thinking: se non stai facendo task
+# complessi, abbassarlo dimezza spesso il costo dei token di output
+MAX_THINKING_TOKENS=8000
+
+# Esclude sezioni dinamiche del system prompt per stabilizzare il
+# prefisso cache — utile se hai MCP che cambiano descrizioni a ogni turno
+claude --exclude-dynamic-system-prompt-sections
+```
+
+> Per la disabilitazione di Auto Memory (un'altra voce che entra nel prefisso) vedi [sezione 7](#memoria-persistente-claude.md-e-auto-memory). Per il monitoraggio del peso MCP e come disabilitare server inutilizzati, vedi [sezione 11.7](#gestire-il-costo-dei-server-mcp-sul-contesto).
+
 ---
 
 
 ---
 
-> ← [7. Memoria persistente](07-memoria.md) | [Index](README.md) | [9. Sicurezza e permessi](09-sicurezza.md) →
+> ← [7. Memoria persistente](07-memoria.md) | [Index](README.md) | [9. Sicurezza, permessi e guardrail](09-sicurezza.md) →

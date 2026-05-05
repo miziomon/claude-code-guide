@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "wordpress-publisher-mcp"
+version = "1.0.0"
+description = "Server MCP per pubblicare contenuti su WordPress via REST API"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.0",
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
+]
+
+[project.scripts]
+wordpress-publisher-mcp = "server:main"

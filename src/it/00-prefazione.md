@@ -1,6 +1,6 @@
 # Guida Pratica a Claude Code CLI
 
-> **Versione 4.23 — maggio 2026** — verificata su Claude Code v2.1.123
+> **Versione 4.30 — maggio 2026** — verificata su Claude Code v2.1.123
 > Licenza [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > [Index](README.md) | [Premessa](00-premessa.md) →
@@ -110,12 +110,14 @@ Buona lettura.
    - [Modelli con finestra 1M token: quando passarci](#modelli-con-finestra-1m-token-quando-passarci)
    - [Regola pratica e mentalità](#regola-pratica-e-mentalità)
    - [Scegliere l'architettura giusta: tabella decisionale](#scegliere-larchitettura-giusta-tabella-decisionale)
-9. [Sicurezza e gestione dei permessi](#sicurezza-e-gestione-dei-permessi)
+9. [Sicurezza, permessi e guardrail](#sicurezza-permessi-e-guardrail)
+   - [I guardrail di Claude Code: difesa in profondità](#i-guardrail-di-claude-code-difesa-in-profondità)
    - [Il sistema dei permessi](#il-sistema-dei-permessi)
    - [Configurare i permessi in settings.json](#configurare-i-permessi-in-settings.json)
    - [Proteggere i segreti](#proteggere-i-segreti)
    - [Modalità pericolose](#modalità-pericolose)
    - [Prompt injection](#prompt-injection)
+   - [I test come guardrail di correttezza](#i-test-come-guardrail-di-correttezza)
 10. [Skill: il meccanismo di estensione](#skill-il-meccanismo-di-estensione)
     - [Come funziona una Skill](#come-funziona-una-skill)
     - [Skill native incluse — approfondimento](#skill-native-incluse-approfondimento)

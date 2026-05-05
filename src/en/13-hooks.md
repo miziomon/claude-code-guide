@@ -1,6 +1,6 @@
 # Practical Guide to Claude Code CLI
 
-> **Version 4.23 — May 2026** — verified on Claude Code v2.1.123
+> **Version 4.30 — May 2026** — verified on Claude Code v2.1.123
 > Licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > ← [12. Subagents](12-subagents.md) | [Index](README.md) | [14. Plugins](14-plugins.md) →
@@ -345,6 +345,99 @@ exit 0
 ```
 
 **Behavior.** At session startup (matcher `startup`, not on `resume`), the main agent receives the reminder as `additionalContext`. It's complementary to `CLAUDE.md`: the Markdown file covers stable rules, the Hook can inject dynamic reminders (e.g., building the message by reading the plugin state, the current branch, or recent events).
+
+#### Example E — Transcript backup before `/compact`
+
+**Scenario.** `/compact` is lossy: the summary preserves key decisions and context, but discards detail. In a session with many architectural decisions or a complex debugging journey, losing detail can cost hours. A `PreCompact` hook saves the transcript before compaction occurs.
+
+**`.claude/settings.json`:**
+
+```json
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/backup-transcript.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**`.claude/hooks/backup-transcript.sh`:**
+
+```bash
+#!/bin/bash
+INPUT=$(cat)
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "unknown"')
+TRANSCRIPT_DIR="${HOME}/.claude/transcripts"
+mkdir -p "$TRANSCRIPT_DIR"
+# Save the raw payload to a dated file per session
+echo "$INPUT" \
+  > "$TRANSCRIPT_DIR/${SESSION_ID}_$(date +%Y%m%d-%H%M%S).json" 2>/dev/null || true
+exit 0
+```
+
+**Behavior.** Every time `/compact` is invoked (or auto-compact is reached), the script saves the session payload to `~/.claude/transcripts/` with session ID and timestamp. The script doesn't block compaction (exit 0): its sole function is the lateral save. Files remain available for later manual reading.
+
+#### Example F — Truncating verbose Bash output
+
+**Scenario.** Commands like `find`, `npm install`, `composer update`, and verbose builds can produce tens of thousands of tokens of output that all enter context as tool results. A `PostToolUse` hook on `Bash` can truncate them before the model sees them, preserving head and tail — where the relevant information usually is.
+
+**`.claude/settings.json`:**
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/truncate-output.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**`.claude/hooks/truncate-output.sh`:**
+
+```bash
+#!/bin/bash
+INPUT=$(cat)
+OUTPUT=$(echo "$INPUT" | jq -r '.tool_result.output // ""')
+LINE_COUNT=$(echo "$OUTPUT" | wc -l)
+MAX_LINES=150
+
+if [ "$LINE_COUNT" -gt "$MAX_LINES" ]; then
+  HEAD=$(echo "$OUTPUT" | head -n 50)
+  TAIL=$(echo "$OUTPUT" | tail -n 50)
+  OMITTED=$(( LINE_COUNT - 100 ))
+  TRUNCATED="${HEAD}
+
+[... ${OMITTED} lines omitted — total output: ${LINE_COUNT} lines ...]
+
+${TAIL}"
+  echo "$INPUT" | jq --arg out "$TRUNCATED" '.tool_result.output = $out'
+else
+  echo "$INPUT"
+fi
+exit 0
+```
+
+**Behavior.** If the command output exceeds 150 lines, the script keeps the first 50 and last 50, inserting a marker with the count of omitted lines. The modified output is returned to the model in place of the original. For output below the threshold, the script passes it through untouched.
+
+> **Warning.** This hook modifies the output before the model sees it. If your task requires a precise line count or the presence of a pattern in the middle of the output, the hook may hide relevant information. Consider whether to activate it at project level or only for specific sessions.
 
 ### 13.7 Security
 

@@ -1,6 +1,6 @@
 # Practical Guide to Claude Code CLI
 
-> **Version 4.23 — May 2026** — verified on Claude Code v2.1.123
+> **Version 4.30 — May 2026** — verified on Claude Code v2.1.123
 > Licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > ← [5. Plan Mode](05-plan-mode.md) | [Index](README.md) | [7. Persistent memory](07-memory.md) →

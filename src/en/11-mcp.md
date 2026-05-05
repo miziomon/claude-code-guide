@@ -1,6 +1,6 @@
 # Practical Guide to Claude Code CLI
 
-> **Version 4.23 — May 2026** — verified on Claude Code v2.1.123
+> **Version 4.30 — May 2026** — verified on Claude Code v2.1.123
 > Licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > ← [10. Skills](10-skills.md) | [Index](README.md) | [12. Subagents](12-subagents.md) →
@@ -146,14 +146,17 @@ Use case: we want Claude Code to be able to **publish content to a WordPress sit
 
 #### Project structure
 
+The complete code lives in the guide's repository, under `src/examples/wordpress-publisher-mcp/`:
+
 ```
-~/mcp/wordpress-publisher/
-├── server.py
-├── pyproject.toml
-└── .env
+src/examples/wordpress-publisher-mcp/
+├── server.py        ← MCP server with the three tools
+├── pyproject.toml   ← dependencies (mcp, httpx, python-dotenv)
+├── .env.example     ← credentials template (copy to .env)
+└── README.md        ← install and configuration instructions
 ```
 
-`.env` (never commit):
+`.env` (never commit — use `.env.example` as a base):
 
 ```
 WP_BASE_URL=https://mysite.example.com
@@ -163,39 +166,22 @@ WP_APP_PASSWORD=xxxx xxxx xxxx xxxx xxxx xxxx
 
 #### Server code (`server.py`)
 
-```python
-"""
-MCP server that publishes articles to WordPress via REST API.
-Three exposed tools:
-  - wp_create_post     : creates a draft (or publishes directly)
-  - wp_publish_post    : promotes an existing draft to "publish"
-  - wp_list_categories : lists the site's categories
-"""
+The core of the server is the authentication setup and the FastMCP tool decorators. Here's the structure with the main tool:
 
-import os
-import base64
-import httpx
+```python
+import os, base64, httpx
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
 
-# Load credentials from .env (never hardcode in repo)
 load_dotenv()
-BASE_URL = os.environ["WP_BASE_URL"].rstrip("/")
-USERNAME = os.environ["WP_USERNAME"]
-APP_PASS = os.environ["WP_APP_PASSWORD"]
-
-# Basic Auth with Application Password (standard WP format)
+# Basic Auth with WP Application Password
 auth_token = base64.b64encode(
-    f"{USERNAME}:{APP_PASS}".encode("utf-8")
+    f"{os.environ['WP_USERNAME']}:{os.environ['WP_APP_PASSWORD']}".encode()
 ).decode("ascii")
-HEADERS = {
-    "Authorization": f"Basic {auth_token}",
-    "Content-Type": "application/json",
-}
+HEADERS = {"Authorization": f"Basic {auth_token}", "Content-Type": "application/json"}
+BASE_URL = os.environ["WP_BASE_URL"].rstrip("/")
 
-# FastMCP instance: the server will be named "wordpress-publisher"
 mcp = FastMCP("wordpress-publisher")
-
 
 @mcp.tool()
 def wp_create_post(
@@ -206,87 +192,31 @@ def wp_create_post(
 ) -> dict:
     """
     Creates a new article on WordPress.
-
-    Args:
-        title:      post title
-        content:    HTML or Gutenberg-block body
-        status:     "draft" (default) or "publish"
-        categories: list of category IDs (optional)
-
-    Returns:
-        Dict with id, status, link, modified of the created post.
+    Args: title, content (HTML), status ("draft"/"publish"), categories (list of IDs)
+    Returns: dict with id, status, link, modified of the created post.
     """
     payload = {"title": title, "content": content, "status": status}
     if categories:
         payload["categories"] = categories
-
-    response = httpx.post(
-        f"{BASE_URL}/wp-json/wp/v2/posts",
-        headers=HEADERS,
-        json=payload,
-        timeout=30.0,
-    )
+    response = httpx.post(f"{BASE_URL}/wp-json/wp/v2/posts",
+                          headers=HEADERS, json=payload, timeout=30.0)
     response.raise_for_status()
     data = response.json()
-    return {
-        "id": data["id"],
-        "status": data["status"],
-        "link": data["link"],
-        "modified": data["modified"],
-    }
-
-
-@mcp.tool()
-def wp_publish_post(post_id: int) -> dict:
-    """
-    Promotes an existing draft to "publish" status.
-
-    Args:
-        post_id: ID of the post to publish
-
-    Returns:
-        Dict with id, status, updated link.
-    """
-    response = httpx.post(
-        f"{BASE_URL}/wp-json/wp/v2/posts/{post_id}",
-        headers=HEADERS,
-        json={"status": "publish"},
-        timeout=30.0,
-    )
-    response.raise_for_status()
-    data = response.json()
-    return {
-        "id": data["id"],
-        "status": data["status"],
-        "link": data["link"],
-    }
-
-
-@mcp.tool()
-def wp_list_categories() -> list[dict]:
-    """
-    Lists all the site's categories.
-
-    Returns:
-        List of dict with id, name, slug, count for each category.
-    """
-    response = httpx.get(
-        f"{BASE_URL}/wp-json/wp/v2/categories",
-        headers=HEADERS,
-        params={"per_page": 100},
-        timeout=30.0,
-    )
-    response.raise_for_status()
-    return [
-        {"id": c["id"], "name": c["name"], "slug": c["slug"], "count": c["count"]}
-        for c in response.json()
-    ]
-
+    return {"id": data["id"], "status": data["status"],
+            "link": data["link"], "modified": data["modified"]}
 
 if __name__ == "__main__":
-    # Server startup in stdio mode (default for local MCPs)
     mcp.run()
 ```
+
+The other two tools follow the same pattern:
+
+- **`wp_publish_post(post_id)`** — changes a draft's status to `"publish"` via `POST /wp-json/wp/v2/posts/{id}`.
+- **`wp_list_categories()`** — retrieves all site categories via `GET /wp-json/wp/v2/categories`.
+
+::: note
+Full code, `.env.example`, `pyproject.toml` and `README` in [src/examples/wordpress-publisher-mcp/](https://github.com/miziomon/claude-code-guide/tree/main/src/examples/wordpress-publisher-mcp) in the guide's repository.
+:::
 
 #### Registration in Claude Code
 
@@ -297,7 +227,7 @@ Add to your `.claude/settings.json` (or the global one):
   "mcpServers": {
     "wordpress-publisher": {
       "command": "python",
-      "args": ["/Users/maurizio/mcp/wordpress-publisher/server.py"]
+      "args": ["/absolute/path/to/src/examples/wordpress-publisher-mcp/server.py"]
     }
   }
 }
@@ -372,6 +302,40 @@ The `mcp__<server>__<tool>` pattern allows precision targeting of the tool you d
 **Remote MCPs.** Servers reached via HTTP+SSE (hosted servers, shared between teams) add a dimension: latency and network auth. For stable team-level integrations a hosted server is preferable; for experimentation and personal integrations, local stdio is simpler and more secure by default. The protocol is the same, only the transport changes.
 
 **When you DON'T need an MCP.** If the task is purely local (reading a file, executing a script), Claude Code already has Read/Write/Bash as native tools: writing an MCP to do what Bash already does is overkill. The rule is: **MCP for external services or network protocols; native tools for the local user system**. When in doubt, first skill (chapter 10) or custom slash command; MCP only when it's an external system Claude needs to dialogue with via API.
+
+### 11.7 Managing the cost of MCP servers on context
+
+Every active MCP server contributes to the session context with its tool definitions: name, description, JSON schema of arguments. The weight ranges from a few hundred tokens for simple servers to thousands for servers with many tools or elaborate descriptions. With ten active servers, the "MCP tare" can easily exceed 10,000 tokens per session and compromise the cache prefix (see [§8.10](#prompt-cache-and-consumption-observability)).
+
+#### Audit with `/context`
+
+The `/context` command shows the "MCP tools" entry in the category breakdown. Audit procedure:
+
+1. Run `/mcp` to see the list of active servers and the tools they expose.
+2. Run `/context` and read the weight of the MCP entry.
+3. Identify servers not used in this project.
+4. Disable them at the project level in `.claude/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": { "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}" }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/maurizio/projects"]
+    }
+  },
+  "disabledMcpjsonServers": ["slack", "linear", "notion"]
+}
+```
+
+The `disabledMcpjsonServers` key disables the listed servers without removing them from the configuration — re-enable them by removing the entry. This configuration in the project's `.claude/settings.json` takes precedence over the global `~/.claude/settings.json`, so you can have different server sets per project.
+
+**Practical rule**: a server you don't use in this project shouldn't be active in this project. Three well-chosen servers weigh less and cache better than ten "just in case".
 
 ---
 

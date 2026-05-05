@@ -1,6 +1,6 @@
 # Practical Guide to Claude Code CLI
 
-> **Version 4.23 — May 2026** — verified on Claude Code v2.1.123
+> **Version 4.30 — May 2026** — verified on Claude Code v2.1.123
 > Licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > [Index](README.md) | [Preface](00-preface.md) →
@@ -110,12 +110,14 @@ Happy reading.
    - [Models with 1M token window: when to switch](#models-with-1m-token-window-when-to-switch)
    - [Practical rule and mindset](#practical-rule-and-mindset)
    - [Choosing the right architecture: decision table](#choosing-the-right-architecture-decision-table)
-9. [Security and permission management](#security-and-permission-management)
+9. [Security, permissions, and guardrails](#security-permissions-and-guardrails)
+   - [Claude Code guardrails: defense in depth](#claude-code-guardrails-defense-in-depth)
    - [The permissions system](#the-permissions-system)
    - [Configuring permissions in settings.json](#configuring-permissions-in-settings.json)
    - [Protecting secrets](#protecting-secrets)
    - [Dangerous modes](#dangerous-modes)
    - [Prompt injection](#prompt-injection)
+   - [Tests as correctness guardrails](#tests-as-correctness-guardrails)
 10. [Skills: the extension mechanism](#skills-the-extension-mechanism)
     - [How a Skill works](#how-a-skill-works)
     - [Bundled native skills — deep dive](#bundled-native-skills-deep-dive)

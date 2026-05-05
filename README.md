@@ -1,6 +1,6 @@
 # Claude Code — Practical Guide
 
-> **Version 4.23 — May 2026** · Verified on Claude Code v2.1.123
+> **Version 4.30 — May 2026** · Verified on Claude Code v2.1.123
 > Licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 A hands-on, honest guide to **Claude Code CLI** — covering everything from first installation to advanced agentic workflows, written by a developer who uses the tool daily and with the tool itself.
@@ -44,7 +44,7 @@ Both language editions share the same 16-chapter structure plus appendices.
 | 6 | [Prompt engineering](src/en/06-prompt-engineering.md) | Writing effective prompts for agentic tools: context, examples, constraints |
 | 7 | [Persistent memory](src/en/07-memory.md) | CLAUDE.md, Auto Memory, and how to give Claude a stable project context |
 | 8 | [Context management](src/en/08-context.md) | Keeping the context window clean and costs under control |
-| 9 | [Security and permissions](src/en/09-security.md) | The permission model, safe operation, and what can go wrong |
+| 9 | [Security, permissions, and guardrails](src/en/09-security.md) | Permission model, safe operation, and guardrails |
 | 10 | [Skills](src/en/10-skills.md) | The extension mechanism — installing, writing, and composing Skills |
 | 11 | [MCP](src/en/11-mcp.md) | Integrating external services via the Model Context Protocol |
 | 12 | [Subagents](src/en/12-subagents.md) | Orchestrating specialized parallel work with the Agent tool |
@@ -56,6 +56,18 @@ Both language editions share the same 16-chapter structure plus appendices.
 | B | [Sources](src/en/appendix-b-sources.md) | Official Anthropic documentation and verified references |
 
 > The first six chapters cover the basics. Chapters 7–14 cover the mechanisms that separate casual use from professional use. The rest is context, judgment, and reflection.
+
+---
+
+## Examples
+
+Working code samples that accompany the guide chapters live under [src/examples/](src/examples/).
+
+| Example | Chapter | Description |
+|---------|---------|-------------|
+| [wordpress-publisher-mcp](src/examples/wordpress-publisher-mcp/) | [11. MCP](src/en/11-mcp.md) (§ 11.5) | A complete Python MCP server that publishes posts to WordPress via the REST API. Exposes three tools to Claude Code: `wp_create_post`, `wp_publish_post`, `wp_list_categories`. |
+
+Each example ships with its own `README.md`, a `pyproject.toml` (or equivalent manifest), and a `.env.example` template — never commit real credentials.
 
 ---
 
@@ -72,12 +84,12 @@ claude-code-guide/
 │   ├── it/                    ← Italian guide, split by chapter
 │   │   ├── README.md          ← Indice navigabile (IT)
 │   │   └── … (21 files total)
+│   ├── examples/
+│   │   └── wordpress-publisher-mcp/   ← MCP server example (Chapter 11)
 │   ├── claude-code-guide-en.md  ← Full source (single file, EN)
 │   ├── claude-code-guide-it.md  ← Full source (single file, IT)
 │   └── assets/
-├── output/
-│   ├── Claude_Code_Guide_17x24.pdf
-│   └── Guida_Claude_Code_17x24.pdf
+├── output/                    ← Pre-built PDFs (17×24 cm and A4)
 ├── CHANGELOG.md
 └── LICENSE
 ```

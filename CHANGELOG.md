@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [4.30.0] — 2026-05-05
+
+### Added
+
+- New working example: `src/examples/wordpress-publisher-mcp/` — a complete Python MCP server publishing to WordPress via the REST API, accompanying chapter 11.5
+- Documentation of the `examples/` folder in the root README with example table
+
+### Changed
+
+- Bump guide version from 4.23 to 4.30 across all sources, split chapter files, and READMEs
+- Re-split English and Italian chapter files from updated sources
+- Rename chapter 9: "Security and permission management" → "Security, permissions, and guardrails" (EN) / "Sicurezza e gestione dei permessi" → "Sicurezza, permessi e guardrail" (IT)
+- New PDF builds: `output/claude-code-guide-{en,it}-{17x24,a4}-v4.30.pdf`
+
+---
+
 ## [4.23.2] — 2026-05-03
 
 ### Changed
@@ -45,7 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/miziomon/claude-code-guide/compare/v4.23.2...HEAD
+[Unreleased]: https://github.com/miziomon/claude-code-guide/compare/v4.30.0...HEAD
+[4.30.0]: https://github.com/miziomon/claude-code-guide/compare/v4.23.2...v4.30.0
 [4.23.2]: https://github.com/miziomon/claude-code-guide/compare/v4.23.1...v4.23.2
 [4.23.1]: https://github.com/miziomon/claude-code-guide/compare/v4.23.0...v4.23.1
 [4.23.0]: https://github.com/miziomon/claude-code-guide/releases/tag/v4.23.0

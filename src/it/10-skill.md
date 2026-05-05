@@ -1,9 +1,9 @@
 # Guida Pratica a Claude Code CLI
 
-> **Versione 4.23 — maggio 2026** — verificata su Claude Code v2.1.123
+> **Versione 4.30 — maggio 2026** — verificata su Claude Code v2.1.123
 > Licenza [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
-> ← [9. Sicurezza e permessi](09-sicurezza.md) | [Index](README.md) | [11. MCP](11-mcp.md) →
+> ← [9. Sicurezza, permessi e guardrail](09-sicurezza.md) | [Index](README.md) | [11. MCP](11-mcp.md) →
 
 ---
 
@@ -462,7 +462,7 @@ Una skill di terzi è codice che entra a far parte del contesto di Claude e può
 - **Codice review obbligatoria** — leggi `SKILL.md` per intero e ispeziona tutti gli script ausiliari (Python, Bash, JS) presenti nella cartella. Cerca riferimenti a comandi distruttivi, esfiltrazione dati, chiamate a domini esterni non documentate.
 - **License compatibile** — verifica che la license della skill sia compatibile con il tuo progetto e con eventuali clausole NDA. CC-BY-SA (come Trail of Bits) impone share-alike sui derivati; GPL-2.0 (come WordPress agent-skills) ha implicazioni copyleft note; MIT (Vercel Labs, Superpowers) è generalmente la più permissiva.
 - **Salute del repo** — controlla data ultimo commit, numero di star, rapporto issue aperte/chiuse, presenza di security advisories. Una skill abbandonata da un anno è un rischio per qualunque codebase la usi attivamente.
-- **Permessi che richiede** — alcune skill chiedono accesso a tool potenti (Bash unrestricted, WebFetch su domini esterni, scrittura globale). Confrontale con la policy del tuo `settings.json` (vedi [sezione 9](#sicurezza-e-gestione-dei-permessi)) e respingi quelle che chiedono più di quanto giustifichino.
+- **Permessi che richiede** — alcune skill chiedono accesso a tool potenti (Bash unrestricted, WebFetch su domini esterni, scrittura globale). Confrontale con la policy del tuo `settings.json` (vedi [sezione 9](#sicurezza-permessi-e-guardrail)) e respingi quelle che chiedono più di quanto giustifichino.
 - **Sandbox in dev** — testa le skill nuove su un progetto throwaway prima di installarle globalmente in `~/.claude/skills/`. Se serve un ulteriore strato di difesa, un hook `PreToolUse` (vedi [sezione 13](#hook-automatizzare-il-lifecycle-di-claude-code)) può bloccare comandi che la skill prova a eseguire fuori dal perimetro consentito.
 
 Lo schema mentale è lo stesso che applicheresti a una dipendenza qualunque: non si include codice che non hai letto, non si fida di un autore solo perché ha tante star, e non si abilita più di quanto serva. La differenza è che qui il "codice" è un'istruzione in linguaggio naturale che Claude leggerà ed eseguirà — e linguaggio naturale è ambiguo per definizione. Doppia attenzione.
@@ -472,4 +472,4 @@ Lo schema mentale è lo stesso che applicheresti a una dipendenza qualunque: non
 
 ---
 
-> ← [9. Sicurezza e permessi](09-sicurezza.md) | [Index](README.md) | [11. MCP](11-mcp.md) →
+> ← [9. Sicurezza, permessi e guardrail](09-sicurezza.md) | [Index](README.md) | [11. MCP](11-mcp.md) →

@@ -1,6 +1,6 @@
 # Practical Guide to Claude Code CLI
 
-> **Version 4.23 — May 2026** — verified on Claude Code v2.1.123
+> **Version 4.30 — May 2026** — verified on Claude Code v2.1.123
 > Licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > ← [14. Plugins](14-plugins.md) | [Index](README.md) | [16. Conclusions](16-conclusions.md) →
@@ -106,10 +106,35 @@ If you come from Vim, enable the mode in `/config` → Editor mode. You'll have 
 
 ### 15.6 Custom slash commands
 
-You can create custom slash commands by saving Markdown files in `.claude/commands/`:
+You can create custom slash commands by saving Markdown files in `.claude/commands/`. The file becomes the prompt Claude executes when you invoke the command.
+
+#### Structure of a command file
+
+```markdown
+---
+description: Short description shown in the picker (max ~80 chars)
+allowed-tools: Read, Bash, Glob
+argument-hint: "[area-to-analyze]"
+---
+
+Here the command prompt. You can use $ARGUMENTS to reference the optional
+argument passed to the command (e.g. /security-audit src/auth).
+```
+
+The **YAML frontmatter** is optional but recommended:
+
+- `description` — appears in the `/` picker and the command listing.
+- `allowed-tools` — list of tools the command can use. If omitted, all tools are available.
+- `argument-hint` — string shown in the picker as an argument hint.
+
+#### Basic example: security audit
 
 ```markdown
 <!-- .claude/commands/security-audit.md -->
+---
+description: OWASP top-10 audit for the plugin's PHP code
+allowed-tools: Read, Grep, Glob
+---
 Run a security audit focused on:
 1. SQL injection in direct queries
 2. XSS in unescaped output
@@ -121,7 +146,51 @@ For each issue found: file, line, severity (low/medium/high/critical),
 suggested fix.
 ```
 
-Now from a session you can launch `/security-audit` and Claude executes the saved prompt.
+#### Recipe: `/audit-context` — consumption snapshot before a heavy task
+
+```markdown
+<!-- .claude/commands/audit-context.md -->
+---
+description: Context snapshot: token usage, config sizes, active MCP servers
+allowed-tools: Bash
+---
+Run in sequence:
+1. /context to show current context usage by category.
+2. /cost to show tokens consumed and estimated session cost.
+3. wc -l CLAUDE.md .claude/settings.json 2>/dev/null to show the sizes
+   of project configuration files.
+
+Then summarize in three lines: context percentage used, heaviest entries,
+and whether there's anything to do before continuing (compact, disable an
+unused MCP server, etc.).
+```
+
+From a session: `/audit-context` gives you the full picture in seconds before starting a heavy task. Equivalent to the preventive check described in [section 8.4](#the-context-command-reading-and-acting), but on-demand and with a final synthesis produced by the model.
+
+#### Recipe: `/snapshot` — preserve state before compacting
+
+```markdown
+<!-- .claude/commands/snapshot.md -->
+---
+description: Save a session brief to docs/snapshots/ before /compact
+allowed-tools: Bash, Write
+---
+Before proceeding with /compact or /clear, create a textual snapshot of
+the current session state.
+
+1. List modified files: git diff --name-only HEAD (or git status --short).
+2. Summarize in at most 10 bullets the architectural decisions made, problems
+   solved, and tasks still open.
+3. Write the summary to docs/snapshots/ with name snapshot-YYYYMMDD-HHMM.md.
+
+The snapshot file serves as a brief for the next session that resumes this
+work with --resume. Keep it concise: 200-300 words, bullet points, no
+introductions.
+```
+
+From a session: `/snapshot` followed by `/compact` is the sequence that preserves key details without keeping the full transcript in context. The next `--resume` session finds the brief ready in `docs/snapshots/`.
+
+> **Slash commands vs hooks.** Custom slash commands are **on-demand**: you invoke them when needed. Hooks (chapter 13) are **automatic**: they fire on lifecycle events regardless of your decision. Use slash commands for recipes you want to control; use hooks for automations that must always happen.
 
 ### 15.7 Headless mode for CI/CD
 

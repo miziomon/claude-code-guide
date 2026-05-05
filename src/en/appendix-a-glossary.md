@@ -1,6 +1,6 @@
 # Practical Guide to Claude Code CLI
 
-> **Version 4.23 — May 2026** — verified on Claude Code v2.1.123
+> **Version 4.30 — May 2026** — verified on Claude Code v2.1.123
 > Licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > ← [16. Conclusions](16-conclusions.md) | [Index](README.md) | [Appendix B — Sources](appendix-b-sources.md) →
@@ -29,6 +29,8 @@ Recurring terms in the guide and in the Claude Code ecosystem, useful as a quick
 
 **Few-shot prompting** — Technique that teaches the desired style or format by providing two or more examples before the actual request. Particularly effective for voice consistency (FAQs, microcopy) and reproduction of structured formats hard to describe in words.
 
+**Guardrail** — A deterministic constraint that lives *outside* the model and limits Claude's actions regardless of what the model "decides." It is not a system prompt suggestion (advisory): it is a gate downstream of the decision. In Claude Code, guardrails are layered across four levels: declarative permissions (`settings.json`), programmatic hooks (`PreToolUse`), execution modes (Plan Mode, `--dangerously-skip-permissions`), and human review. The shared calibration principle: the generator does not validate itself. See section 9 for the full treatment.
+
 **Headless mode** — Non-interactive execution via `-p` flag. Claude receives a prompt, produces output, exits. Used for CI/CD and automations.
 
 **Hook** — Script (bash, HTTP, prompt, agent or MCP tool) configured in `settings.json` that intercepts Claude Code lifecycle events: `PreToolUse`, `PostToolUse`, `SessionStart`, `UserPromptSubmit`, and others. Used to validate, log, inject context, or block operations. Different from Subagent (executes delegated work) and from Skill (enriches the main agent's context): a Hook acts **around** the main agent without being part of it. For complete treatment see section 13.
@@ -36,6 +38,8 @@ Recurring terms in the guide and in the Claude Code ecosystem, useful as a quick
 **Hope Coding** — Prompt engineering antipattern: launching generic requests to AI "hoping" it guesses what we wanted, without specifying context, constraints, or output format. Produces random results and contrasts with *conscious Vibe coding* (see Vibe coding entry) based on structured prompts.
 
 **JSON-RPC** — Textual communication protocol (based on JSON) for remote procedure calls. It's the base layer on which MCP packages all its messages between client and server. Defines request, response, and notification with a standardized format.
+
+**MAX_THINKING_TOKENS** — Environment variable that limits the token budget reserved for the model's extended thinking (internal reasoning). By default it's unlimited; setting it (e.g., `MAX_THINKING_TOKENS=8000`) reduces output token cost on non-critical sessions. Discussed in §8.10 in the context of consumption optimization.
 
 **MCP (Model Context Protocol)** — Open protocol, open-sourced by Anthropic in November 2024, that standardizes the way an AI application (host) connects to external data sources and tools. Client-server model based on JSON-RPC 2.0; transport via stdio (local) or HTTP+SSE (remote). Three primitives: tools, resources, prompts. See chapter 11 for complete treatment.
 
@@ -57,6 +61,14 @@ Recurring terms in the guide and in the Claude Code ecosystem, useful as a quick
 
 **Plugin** — Package distributed via marketplace that extends Claude Code with slash commands, agents, and skills. Managed with `claude plugin install`.
 
+**PostToolUse** — Lifecycle hook event that fires **after** a tool has completed execution. Unlike `PreToolUse`, it cannot block the action (already done), but can log results, filter noisy output before it reaches the model, or trigger follow-up operations (e.g., linting, audit log). See examples B and F in §13.6.
+
+**PreCompact** — Lifecycle hook event that fires immediately **before** the `/compact` compaction (automatic or manual) compresses the session transcript. Allows saving the full transcript before the summary replaces it. See Example E in §13.6.
+
+**PreToolUse** — Lifecycle hook event that fires **before** a tool is executed. Can block the operation (exit 2 with message in stderr) or modify the arguments. It's the only event with real veto power: used for security rules (e.g., blocking `rm -rf` on critical paths). See Example A in §13.6.
+
+**Prompt cache** — Anthropic mechanism that preserves stable prefixes of the prompt (MCP tools, system prompt, initial messages) between successive turns. Reduces input token cost by up to 90% for already-cached blocks. The cache has a TTL of 5 minutes (default) or 1 hour (opt-in). The prefix hierarchy follows the order: tools → system → messages. Monitorable via `/cost` by reading `cache_read_input_tokens` vs `cache_creation_input_tokens`. See §8.10.
+
 **Prompt engineering** — Discipline of formulating effective requests for an LLM. Articulated in four fundamental ingredients (context, task, constraints, output format) plus an optional one (role). On top 2026 models, "role prompting" is downsized in favor of structural constraints and the use of XML-like delimiters (`<context>`, `<task>`, `<constraints>`, `<output_format>`). See section 6 for complete treatment.
 
 **Prompt injection** — Attack in which malicious instructions are injected into files, comments, or responses from external services to manipulate AI behavior.
@@ -65,6 +77,8 @@ Recurring terms in the guide and in the Claude Code ecosystem, useful as a quick
 
 **Session** — Ongoing conversation with Claude Code, persistent across restarts. Each session has its own context and history.
 
+**SessionStart** — Lifecycle hook event that fires at session startup (matcher `startup`) or when resuming an existing session (matcher `resume`). Typically used to inject initial context, dynamic reminders, or system state (current branch, project variables). See Example D in §13.6.
+
 **Skill** — Specialized module (folder with `SKILL.md`) that Claude automatically activates when the skill description matches the task context. Not invoked with slash commands.
 
 **Slash command** — Command starting with `/` inside an interactive session (e.g., `/init`, `/compact`, `/plan`). Different from launch flags that start with `--`.
@@ -72,6 +86,10 @@ Recurring terms in the guide and in the Claude Code ecosystem, useful as a quick
 **Subagent** — Isolated Claude instance created by the `Task` tool to execute searches or specialized tasks without "polluting" the main session context.
 
 **Token** — Unit of text measurement for an LLM (approximately 4 characters in English, slightly less in Italian). API costs are calculated in input and output tokens. Claude Code uses tokens every time it reads a file, receives a prompt, or produces a response.
+
+**Transcript** — The complete textual log of a Claude Code session: all user messages, model responses, and tool outputs. The transcript grows with every turn and is the main driver of context growth. Compaction via `/compact` replaces it with a summary; `PreCompact` hooks can save it before this happens. See §13.6 Example E.
+
+**UserPromptSubmit** — Lifecycle hook event that fires every time the user submits a message. Can filter, enrich, or block the prompt before it reaches the model. See §13.4.
 
 **Vibe coding** — Term that became popular in 2024-2025 to describe AI-assisted development style: instead of writing code manually, you write a structured prompt describing what it should do, and the AI generates the implementation.
 

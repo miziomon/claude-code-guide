@@ -1,6 +1,6 @@
 # Guida Pratica a Claude Code CLI
 
-> **Versione 4.23 — maggio 2026** — verificata su Claude Code v2.1.123
+> **Versione 4.30 — maggio 2026** — verificata su Claude Code v2.1.123
 > Licenza [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > ← [12. Subagent](12-subagent.md) | [Index](README.md) | [14. Plugin](14-plugin.md) →
@@ -345,6 +345,99 @@ exit 0
 ```
 
 **Comportamento.** All'avvio della sessione (matcher `startup`, non su `resume`), il main agent riceve il reminder come `additionalContext`. È complementare a `CLAUDE.md`: il file Markdown copre le regole stabili, l'Hook può iniettare reminder dinamici (es. costruire il messaggio leggendo lo stato del plugin, la branch corrente, o eventi recenti).
+
+#### Esempio E — Backup transcript prima di `/compact`
+
+**Scenario.** `/compact` è lossy: il sommario conserva decisioni e contesto chiave, ma butta via i dettagli. In una sessione con molte decisioni architetturali o un debug complesso, perdere il dettaglio può costare ore. Un hook `PreCompact` salva il transcript prima che la compaction avvenga.
+
+**`.claude/settings.json`:**
+
+```json
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/backup-transcript.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**`.claude/hooks/backup-transcript.sh`:**
+
+```bash
+#!/bin/bash
+INPUT=$(cat)
+SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // "unknown"')
+TRANSCRIPT_DIR="${HOME}/.claude/transcripts"
+mkdir -p "$TRANSCRIPT_DIR"
+# Salva il contenuto grezzo del payload in un file datato per sessione
+echo "$INPUT" \
+  > "$TRANSCRIPT_DIR/${SESSION_ID}_$(date +%Y%m%d-%H%M%S).json" 2>/dev/null || true
+exit 0
+```
+
+**Comportamento.** Ogni volta che viene invocato `/compact` (o si raggiunge l'auto-compact), lo script salva il payload della sessione in `~/.claude/transcripts/` con session ID e timestamp. Lo script non blocca la compaction (exit 0): la sua unica funzione è il salvataggio laterale. I file restano disponibili per lettura manuale successiva.
+
+#### Esempio F — Troncamento output verbosi da Bash
+
+**Scenario.** Comandi come `find`, `npm install`, `composer update` e build verbosi producono decine di migliaia di token di output che entrano tutti nel contesto come tool result. Un hook `PostToolUse` su `Bash` può troncarli prima che il modello li veda, preservando testa e coda — dove di solito stanno l'informazione rilevante.
+
+**`.claude/settings.json`:**
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/truncate-output.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**`.claude/hooks/truncate-output.sh`:**
+
+```bash
+#!/bin/bash
+INPUT=$(cat)
+OUTPUT=$(echo "$INPUT" | jq -r '.tool_result.output // ""')
+LINE_COUNT=$(echo "$OUTPUT" | wc -l)
+MAX_LINES=150
+
+if [ "$LINE_COUNT" -gt "$MAX_LINES" ]; then
+  HEAD=$(echo "$OUTPUT" | head -n 50)
+  TAIL=$(echo "$OUTPUT" | tail -n 50)
+  OMITTED=$(( LINE_COUNT - 100 ))
+  TRUNCATED="${HEAD}
+
+[... ${OMITTED} righe omesse — output totale: ${LINE_COUNT} righe ...]
+
+${TAIL}"
+  echo "$INPUT" | jq --arg out "$TRUNCATED" '.tool_result.output = $out'
+else
+  echo "$INPUT"
+fi
+exit 0
+```
+
+**Comportamento.** Se l'output del comando supera 150 righe, lo script conserva le prime 50 e le ultime 50, inserendo un marcatore con il conteggio delle righe omesse. L'output modificato viene restituito al modello al posto di quello originale. Per output sotto soglia, lo script lo lascia passare intatto.
+
+> **Attenzione.** Questo hook modifica l'output prima che il modello lo veda. Se il task richiede il conteggio preciso di righe o la presenza di un pattern in una parte centrale dell'output, l'hook può nascondere informazioni rilevanti. Valuta se attivarlo a livello di progetto o solo per sessioni specifiche.
 
 ### 13.7 Sicurezza
 

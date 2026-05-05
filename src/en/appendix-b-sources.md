@@ -1,6 +1,6 @@
 # Practical Guide to Claude Code CLI
 
-> **Version 4.23 — May 2026** — verified on Claude Code v2.1.123
+> **Version 4.30 — May 2026** — verified on Claude Code v2.1.123
 > Licensed under [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > ← [Appendix A — Glossary](appendix-a-glossary.md) | [Index](README.md) | [About the Author](about-the-author.md) →
@@ -39,6 +39,7 @@ To explore further or verify updated specifications:
 
 - **Caveman skill (Julius Brussee)**: https://github.com/JuliusBrussee/caveman
 - **Superpowers (Jesse Vincent)**: https://github.com/obra/superpowers
+- **claude-mem (Alex Newman / @thedotmack)**: https://github.com/thedotmack/claude-mem
 
 **MCP (Model Context Protocol) — official sources:**
 

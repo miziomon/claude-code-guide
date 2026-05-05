@@ -1,6 +1,6 @@
 # Guida Pratica a Claude Code CLI
 
-> **Versione 4.23 — maggio 2026** — verificata su Claude Code v2.1.123
+> **Versione 4.30 — maggio 2026** — verificata su Claude Code v2.1.123
 > Licenza [Creative Commons BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 
 > ← [6. Prompt engineering](06-prompt-engineering.md) | [Index](README.md) | [8. Gestione del contesto](08-contesto.md) →
@@ -313,6 +313,8 @@ In dubbio, parti attiva e disabilita per sessione o progetto quando serve.
 **Pattern consigliato**: usa `CLAUDE.md` per le **regole invalicabili** — le cose che non vuoi rinegoziare ogni volta — e lascia Auto Memory per le **sfumature** che emergono lavorando. Se ti accorgi che una memoria appresa è importante e stabile, **promuovila** trasferendola manualmente in `CLAUDE.md`. Da quel momento è una regola contrattuale, non più solo un'osservazione che Claude potrebbe dimenticare se rivede il file.
 
 > Per chi conosce già la distinzione, esiste una terza via complementare: **`CLAUDE.local.md`**, un file Markdown manuale come `CLAUDE.md` ma **gitignored** per default. Lo scrivi tu, è specifico della tua copia locale, non viene committato. È utile per preferenze personali del singolo dev su un progetto condiviso (percorsi di tool locali, scorciatoie tue), senza imporle al team.
+
+**Alternativa community: `claude-mem`.** È un **plugin** Claude Code (non una skill singola — vedi cap. 14 per la distinzione) che affronta lo stesso problema della continuità di contesto con un approccio filosoficamente opposto. Invece di apprendimenti dichiarativi scritti da Claude in file Markdown leggibili, `claude-mem` registra automaticamente i transcript di sessione, li comprime semanticamente via API Anthropic, e li indicizza in storage ibrido (SQLite + FTS5 + Chroma vector DB). Il risultato è una memoria automatica, ricercabile, opaca — utile se lavori su molte sessioni e hai bisogno di semantic recall trasversale del tipo "abbiamo già risolto questo?". Il sistema è maturissimo sul fronte feature ma porta con sé trade-off non banali: license **AGPL-3.0** (problematica per progetti chiusi), manutentore singolo, worker HTTP locale sulla porta 37777 (superficie di attacco da valutare), e la natura binaria dello storage che non si versionano in git. Per link al repo vedi Allegato B. Il libro consiglia il sistema nativo per default; `claude-mem` è da valutare solo quando la ricerca trasversale tra sessioni è un bisogno concreto e i trade-off sono accettati consapevolmente.
 
 ---
 
